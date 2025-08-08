@@ -1,47 +1,46 @@
 package com.flutterjunction.mvvmbasics
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.flutterjunction.mvvmbasics.ui.theme.MVVMBasicsTheme
+import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : ComponentActivity() {
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import com.flutterjunction.mvvmbasics.data.Quote
+import com.flutterjunction.mvvmbasics.databinding.ActivityMainBinding
+
+import com.flutterjunction.mvvmbasics.utilities.InjectorUtils
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            MVVMBasicsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        initializeUI()
+    }
+
+    private fun initializeUI() {
+        val factory = InjectorUtils.quotesViewModelFactory()
+        val viewModel = ViewModelProvider(this, factory)[QuotesViewModel::class.java]
+
+        viewModel.getQuotes().observe(this, Observer { quotes ->
+            val stringBuilder = StringBuilder()
+            quotes.forEach { quote -> stringBuilder.append("$quote\n\n") }
+            binding.textViewQuotes.text = stringBuilder.toString()
+        })
+
+        binding.buttonAddQuote.setOnClickListener {
+            val quote = Quote(
+                binding.editTextQuote.text.toString(),
+                binding.editTextAuthor.text.toString()
+            )
+            viewModel.addQuote(quote)
+            binding.editTextQuote.setText("")
+            binding.editTextAuthor.setText("")
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MVVMBasicsTheme {
-        Greeting("Android")
-    }
-}
